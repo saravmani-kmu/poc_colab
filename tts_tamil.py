@@ -23,8 +23,9 @@ def generate_tamil_speech(text, output_filename="tamil_speech.wav"):
     print(f"Using device: {device}")
 
     print("Loading model...")
-    model = ParlerTTSForConditionalGeneration.from_pretrained(MODEL_NAME).to(device)
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    hf_token = os.environ.get("HF_TOKEN")
+    model = ParlerTTSForConditionalGeneration.from_pretrained(MODEL_NAME, token=hf_token).to(device)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=hf_token)
     description_tokenizer = AutoTokenizer.from_pretrained(
         model.config.text_encoder._name_or_path
     )
