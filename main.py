@@ -69,14 +69,21 @@ def run():
     ]
 
     print("\nGenerating Tamil speech...")
-    tamil_texts = [
-        ("வணக்கம், நீங்கள் எப்படி இருக்கிறீர்கள்?", "greeting.wav"),
-        ("இன்று வானிலை மிகவும் அழகாக இருக்கிறது.", "weather.wav"),
-        ("நன்றி, மீண்டும் சந்திப்போம்.", "farewell.wav"),
-    ]
-    for text, filename in tamil_texts:
-        path = generate_tamil_speech(text, filename)
-        files.append(path)
+    if os.path.exists("tamiltext.txt"):
+        with open("tamiltext.txt", encoding="utf-8") as f:
+            text = f.read().strip()
+        if text:
+            path = generate_tamil_speech(text, "tamiltext_audio.wav")
+            files.append(path)
+    else:
+        tamil_texts = [
+            ("வணக்கம், நீங்கள் எப்படி இருக்கிறீர்கள்?", "greeting.wav"),
+            ("இன்று வானிலை மிகவும் அழகாக இருக்கிறது.", "weather.wav"),
+            ("நன்றி, மீண்டும் சந்திப்போம்.", "farewell.wav"),
+        ]
+        for text, filename in tamil_texts:
+            path = generate_tamil_speech(text, filename)
+            files.append(path)
 
     for f in files:
         print(f"  Created: {f}")

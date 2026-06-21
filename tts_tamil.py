@@ -64,20 +64,34 @@ def generate_tamil_speech(text, output_filename="tamil_speech.wav"):
     return output_path
 
 
-def run():
-    samples = [
-        ("வணக்கம், நீங்கள் எப்படி இருக்கிறீர்கள்?", "greeting.wav"),
-        ("இன்று வானிலை மிகவும் அழகாக இருக்கிறது.", "weather.wav"),
-        ("நன்றி, மீண்டும் சந்திப்போம்.", "farewell.wav"),
-    ]
+def run(text_file="tamiltext.txt"):
+    if os.path.exists(text_file):
+        with open(text_file, encoding="utf-8") as f:
+            text = f.read().strip()
 
-    generated_files = []
-    for text, filename in samples:
+        if not text:
+            print(f"ERROR: {text_file} is empty")
+            return []
+
+        filename = "tamiltext_audio.wav"
+        print(f"Generating audio from {text_file}...")
         path = generate_tamil_speech(text, filename)
-        generated_files.append(path)
+        print(f"\nGenerated audio: {path}")
+        return [path]
+    else:
+        samples = [
+            ("வணக்கம், நீங்கள் எப்படி இருக்கிறீர்கள்?", "greeting.wav"),
+            ("இன்று வானிலை மிகவும் அழகாக இருக்கிறது.", "weather.wav"),
+            ("நன்றி, மீண்டும் சந்திப்போம்.", "farewell.wav"),
+        ]
 
-    print(f"\nGenerated {len(generated_files)} audio files in '{OUTPUT_DIR}/'")
-    return generated_files
+        generated_files = []
+        for text, filename in samples:
+            path = generate_tamil_speech(text, filename)
+            generated_files.append(path)
+
+        print(f"\nGenerated {len(generated_files)} audio files in '{OUTPUT_DIR}/'")
+        return generated_files
 
 
 if __name__ == "__main__":
