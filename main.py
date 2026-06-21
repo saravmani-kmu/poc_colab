@@ -3,6 +3,7 @@ import json
 import csv
 import zipfile
 from datetime import datetime
+from tts_tamil import generate_tamil_speech
 
 
 OUTPUT_DIR = "output"
@@ -66,6 +67,17 @@ def run():
         generate_json_data(),
         generate_csv_data(),
     ]
+
+    print("\nGenerating Tamil speech...")
+    tamil_texts = [
+        ("வணக்கம், நீங்கள் எப்படி இருக்கிறீர்கள்?", "greeting.wav"),
+        ("இன்று வானிலை மிகவும் அழகாக இருக்கிறது.", "weather.wav"),
+        ("நன்றி, மீண்டும் சந்திப்போம்.", "farewell.wav"),
+    ]
+    for text, filename in tamil_texts:
+        path = generate_tamil_speech(text, filename)
+        files.append(path)
+
     for f in files:
         print(f"  Created: {f}")
 
