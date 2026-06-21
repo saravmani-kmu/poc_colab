@@ -1,0 +1,15 @@
+{
+  "id": "saravmani/poc-tamil-tts-indic-parler",
+  "title": "POC Tamil TTS Indic Parler",
+  "code_file": "kaggle_notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "keywords": ["tamil"],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

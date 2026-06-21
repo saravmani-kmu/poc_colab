@@ -1,5 +1,6 @@
 output/
 output_bundle.zip
+kaggle_output/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
