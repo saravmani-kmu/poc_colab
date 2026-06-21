@@ -24,7 +24,9 @@ def generate_tamil_speech(text, output_filename="tamil_speech.wav"):
 
     print("Loading model...")
     hf_token = os.environ.get("HF_TOKEN")
-    model = ParlerTTSForConditionalGeneration.from_pretrained(MODEL_NAME, token=hf_token).to(device)
+    model = ParlerTTSForConditionalGeneration.from_pretrained(
+        MODEL_NAME, token=hf_token, torch_dtype=torch.float32
+    ).to(device)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=hf_token)
     description_tokenizer = AutoTokenizer.from_pretrained(
         model.config.text_encoder._name_or_path
@@ -34,12 +36,27 @@ def generate_tamil_speech(text, output_filename="tamil_speech.wav"):
     description_input_ids = description_tokenizer(DESCRIPTION, return_tensors="pt").to(device)
     prompt_input_ids = tokenizer(text, return_tensors="pt").to(device)
 
-    generation = model.generate(
-        input_ids=description_input_ids.input_ids,
-        attention_mask=description_input_ids.attention_mask,
-        prompt_input_ids=prompt_input_ids.input_ids,
-        prompt_attention_mask=prompt_input_ids.attention_mask,
-    )
+    try:
+        generation = model.generate(
+            input_ids=description_input_ids.input_ids,
+            attention_mask=description_input_ids.attention_mask,
+            prompt_input_ids=prompt_input_ids.input_ids,
+            prompt_attention_mask=prompt_input_ids.attention_mask,
+        )
+    except RuntimeError as e:
+        if "CUDA" in str(e) and device != "cpu":
+            print(f"CUDA error, falling back to CPU: {e}")
+            model = model.to("cpu")
+            description_input_ids = description_tokenizer(DESCRIPTION, return_tensors="pt")
+            prompt_input_ids = tokenizer(text, return_tensors="pt")
+            generation = model.generate(
+                input_ids=description_input_ids.input_ids,
+                attention_mask=description_input_ids.attention_mask,
+                prompt_input_ids=prompt_input_ids.input_ids,
+                prompt_attention_mask=prompt_input_ids.attention_mask,
+            )
+        else:
+            raise
 
     audio_arr = generation.cpu().numpy().squeeze()
     sf.write(output_path, audio_arr, model.config.sampling_rate)
