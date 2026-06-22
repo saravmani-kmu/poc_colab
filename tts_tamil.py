@@ -8,21 +8,20 @@ from transformers import AutoTokenizer
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-
-MODEL_NAME = "ai4bharat/indic-parler-tts"
 OUTPUT_DIR = "output"
+MODEL_TYPE = os.environ.get("MODEL_TYPE", "indic-parler")
 SPEAKER = "Jaya"
 DESCRIPTION = f"{SPEAKER}'s voice is clear and natural with a warm, conversational tone. The recording is of very high quality with no background noise."
 
+if MODEL_TYPE == "indic-parler":
+    MODEL_NAME = "ai4bharat/indic-parler-tts"
+elif MODEL_TYPE == "fish-speech":
+    MODEL_NAME = "fishaudio/fish-speech-1.4"
+else:
+    raise ValueError(f"Unknown model type: {MODEL_TYPE}")
 
-def generate_tamil_speech(text, output_filename="tamil_speech.wav"):
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    output_path = os.path.join(OUTPUT_DIR, output_filename)
 
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
-
-    print("Loading model...")
+def generate_with_indic_parler(text, output_path, device):
     hf_token = os.environ.get("HF_TOKEN")
     model = ParlerTTSForConditionalGeneration.from_pretrained(
         MODEL_NAME, token=hf_token, torch_dtype=torch.float32
@@ -32,7 +31,6 @@ def generate_tamil_speech(text, output_filename="tamil_speech.wav"):
         model.config.text_encoder._name_or_path
     )
 
-    print(f"Generating speech for: {text}")
     description_input_ids = description_tokenizer(DESCRIPTION, return_tensors="pt").to(device)
     prompt_input_ids = tokenizer(text, return_tensors="pt").to(device)
 
@@ -60,6 +58,45 @@ def generate_tamil_speech(text, output_filename="tamil_speech.wav"):
 
     audio_arr = generation.cpu().numpy().squeeze()
     sf.write(output_path, audio_arr, model.config.sampling_rate)
+    return output_path
+
+
+def generate_with_fish_speech(text, output_path, device):
+    try:
+        from fish_speech.models import TTSModel
+        from fish_speech.utils import setup_logger
+    except ImportError:
+        raise ImportError("fish-speech not installed. Run: pip install fish-speech")
+
+    model = TTSModel.from_pretrained(MODEL_NAME).to(device)
+
+    audio = model.synthesize(text=text, language="ta")
+
+    if isinstance(audio, dict):
+        audio_data = audio.get("audio", audio.get("wav"))
+    else:
+        audio_data = audio
+
+    sf.write(output_path, audio_data, 24000)
+    return output_path
+
+
+def generate_tamil_speech(text, output_filename="tamil_speech.wav"):
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.join(OUTPUT_DIR, output_filename)
+
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
+    print(f"Using model: {MODEL_TYPE}")
+
+    print("Loading model...")
+    if MODEL_TYPE == "indic-parler":
+        print(f"Generating speech for: {text}")
+        generate_with_indic_parler(text, output_path, device)
+    elif MODEL_TYPE == "fish-speech":
+        print(f"Generating speech for: {text}")
+        generate_with_fish_speech(text, output_path, device)
+
     print(f"Audio saved: {output_path} ({os.path.getsize(output_path)} bytes)")
     return output_path
 

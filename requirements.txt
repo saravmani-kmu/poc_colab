@@ -1,4 +1,5 @@
 parler-tts @ git+https://github.com/huggingface/parler-tts.git
+fish-speech
 torch
 transformers
 soundfile
