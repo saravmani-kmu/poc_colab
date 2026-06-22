@@ -12,6 +12,7 @@ KERNEL_SLUG = "saravmani/poc-tamil-tts-indic-parler"
 NOTEBOOK_PATH = os.path.join(KERNEL_DIR, "kaggle_notebook.ipynb")
 
 HF_TOKEN_FILE = r"D:\project_kyog\secrets\tokens.txt"
+MODEL_TYPE = os.environ.get("MODEL_TYPE", "indic-parler")
 
 
 def get_hf_token():
@@ -30,15 +31,20 @@ def get_hf_token():
     sys.exit(1)
 
 
-def inject_token_and_push(hf_token):
-    with open(NOTEBOOK_PATH) as f:
+def inject_token_and_push(hf_token, model_type):
+    with open(NOTEBOOK_PATH, encoding="utf-8") as f:
         nb = json.load(f)
 
     nb_patched = copy.deepcopy(nb)
+    hf_cell_found = False
+    model_cell_found = False
+
     for cell in nb_patched["cells"]:
         if cell.get("cell_type") == "code":
             src = "".join(cell["source"]) if isinstance(cell["source"], list) else cell["source"]
-            if "HF_TOKEN" in src and "login" in src:
+
+            # Inject HF_TOKEN
+            if "HF_TOKEN" in src and "login" in src and not hf_cell_found:
                 cell["source"] = [
                     f'import os\n',
                     f'os.environ["HF_TOKEN"] = "{hf_token}"\n',
@@ -46,18 +52,29 @@ def inject_token_and_push(hf_token):
                     f'login(token=os.environ["HF_TOKEN"])\n',
                     f'print("Logged in to HuggingFace")\n',
                 ]
-                break
+                hf_cell_found = True
+
+            # Inject MODEL_TYPE
+            if "MODEL_TYPE = " in src and not model_cell_found:
+                cell["source"] = [
+                    f"# Set the TTS model to use\n",
+                    f"# Options: 'indic-parler' (default), 'fish-speech'\n",
+                    f"MODEL_TYPE = '{model_type}'\n",
+                    f"os.environ['MODEL_TYPE'] = MODEL_TYPE\n",
+                    f"print(f'Using model: {MODEL_TYPE}')\n",
+                ]
+                model_cell_found = True
 
     patched_path = NOTEBOOK_PATH + ".tmp"
-    with open(patched_path, "w") as f:
-        json.dump(nb_patched, f, indent=2)
+    with open(patched_path, "w", encoding="utf-8") as f:
+        json.dump(nb_patched, f, indent=2, ensure_ascii=False)
 
     os.replace(patched_path, NOTEBOOK_PATH)
-    print("=== Pushing kernel to Kaggle ===")
+    print(f"=== Pushing kernel to Kaggle (model: {model_type}) ===")
     code = run_cmd(f'kaggle kernels push -p "{KERNEL_DIR}"')
 
-    with open(NOTEBOOK_PATH, "w") as f:
-        json.dump(nb, f, indent=2)
+    with open(NOTEBOOK_PATH, "w", encoding="utf-8") as f:
+        json.dump(nb, f, indent=2, ensure_ascii=False)
 
     if code != 0:
         print("ERROR: Failed to push kernel")
@@ -110,7 +127,8 @@ def download_output():
 
 if __name__ == "__main__":
     hf_token = get_hf_token()
-    inject_token_and_push(hf_token)
+    print(f"Using model: {MODEL_TYPE}")
+    inject_token_and_push(hf_token, MODEL_TYPE)
     success = poll_until_complete()
     if success:
         download_output()
