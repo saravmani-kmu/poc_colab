@@ -57,11 +57,12 @@ def inject_token_and_push(hf_token, model_type):
             # Inject MODEL_TYPE
             if "MODEL_TYPE = " in src and not model_cell_found:
                 cell["source"] = [
+                    f"import os\n",
                     f"# Set the TTS model to use\n",
                     f"# Options: 'indic-parler' (default), 'fish-speech'\n",
                     f"MODEL_TYPE = '{model_type}'\n",
                     f"os.environ['MODEL_TYPE'] = MODEL_TYPE\n",
-                    f"print(f'Using model: {MODEL_TYPE}')\n",
+                    f"print(f'Using model: {{MODEL_TYPE}}')\n",
                 ]
                 model_cell_found = True
 
